@@ -1,0 +1,94 @@
+As a borrower, I want to borrow equipment by entering the labels or take photos.
+As a borrower, I want to check if an item is available.
+As a borrower, I want to see all the available cameras, lenses, etc.
+As a borrower, I want to return equipment by entering the labels or take photos.
+As a borrower, I want to talk to admins.
+
+As an admin, I want to check if an item is available.
+As an admin, I want to check the history of an item.
+As an admin, I want to check the history of a person.
+As an admin, I want to check list of non-returned equipment.
+As an admin, I want to mark/unmark an equipment as missing/damaged/lost.
+As an admin, I want to send a reminder to an user.
+As an admin, I want to see name of borrowers.
+
+
+Scenario 2:
+
+User:
+        /borrow
+Bot:
+        You are trying to borrow equipment.
+        Give me the list of items you want to borrow. Use either label or ID.
+        
+        Current list: 0 items
+        
+        [Proceed]
+        [Cancel]
+
+User:
+        MTP1 SLR2
+
+Bot:
+        You are trying to borrow equipment.
+        Give me the list of items you want to borrow. Use either label or ID.
+        Press the corresponding button to remove an item.
+        
+        Current list: 2 items
+        [MTP1 (1234)]
+        [SLR2 (5678)]
+        [Proceed]
+        [Cancel]
+
+User:
+        /proceed
+
+Bot:
+        Operation succeeded. Type /status to see your status.
+
+        
+        
+        
+Scenario 3:
+
+User:
+        /status
+Bot:
+        You are borrowing 2 items of equipment.
+        MTP1 (1234) Manfrotto Tripod (since 01/01/2019)
+        SLR2 (5678) Canon EOS 7D (since 01/01/2019)
+
+
+Scenario 4:
+
+User:
+        /return
+Bot:
+        You are trying to return equipment.
+        Click to the buttons below to return.
+        
+        You are borrowing 2 items.
+        [MTP1 (1234)]
+        [SLR2 (5678)]
+
+User:
+        ...
+Bot:
+        You are trying to return equipment.
+        Click to the buttons below to return.
+        
+        You are borrowing 1 item.
+        [MTP1 (1234)]
+
+        
+        
+Scenario 5:
+
+Admin:
+        /history
+Bot:
+        ...
+Admin:
+        /status MTP*
+Bot:
+        ...
