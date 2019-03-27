@@ -1,16 +1,10 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import logging
 import textwrap
 
 from backend import Backend
-
-from telegram import (
-    ReplyKeyboardMarkup,
-    ReplyKeyboardRemove,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-)
+from starttalker import StartTalker
 
 from telegram.ext import (
     Updater,
@@ -23,92 +17,21 @@ from telegram.ext import (
 )
 
 backend = Backend()
+start_talker = StartTalker(backend)
 
 """
-Start
+Stateless commands
 """
 
-def start_ask(bot, update):
-    reply_markup = ReplyKeyboardMarkup(
-        [["Borrow"], ["Return"], ["Status"]],
-        one_time_keyboard=True
-    )
-    res = "Hello! How can I help you?"
-    update.message.reply_text(res, reply_markup=reply_markup)
-    return start_ans
+def get_movements_execute(bot, update):
+    update.message.reply_text(str(backend.get_movements()))
 
-def start_handlers():
-    return [MessageHandler(Filters.text, start_ans)]
-
-def start_ans(bot, update):
-    req = update.message.text
-    if req == "Borrow":
-        return borrow_ask(bot, update)
-    else:
-        update.message.reply_text("Unknown request: `%s`" % req)
-        return start_ask(bot, update)
+def del_movements_execute(bot, update):
+    backend.del_movements()
+    update.message.reply_text("OK")
 
 """
-Borrow
-"""
-
-def borrow_ask(bot, update):
-    stages = backend.get_stages(update.message.from_user.id)
-    print(update.message.from_user.id)
-    
-    res = textwrap.dedent(
-        """
-        You are trying to borrow equipment.
-        Press Add to add items to the list.
-        
-        Current list: %d item(s)
-        
-        %s
-        """ % (len(stages), '\n'.join(map(str, stages)))
-    )
-
-    buttons = [["Add", "Remove"], ["Proceed"], ["Cancel"]]
-    reply_markup = ReplyKeyboardMarkup(buttons, one_time_keyboard=True)
-    update.message.reply_text(res, reply_markup=reply_markup)
-    return borrow_ans
-
-def borrow_handlers():
-    return [
-        MessageHandler(Filters.text, borrow_ans)
-    ]
-
-def borrow_ans(bot, update):
-    req = update.message.text
-    if req == "Add":
-        return borrow_add_ask(bot, update)
-    elif req == "Proceed":
-        pass
-    else:
-        update.message.reply_text("Unknown request: `%s`" % req)
-        return borrow_ask(bot, update)
-
-"""
-Borrow > Add
-"""
-
-def borrow_add_ask(bot, update):
-    res = "What do you want to add?"
-    reply_markup = ReplyKeyboardRemove()
-    update.message.reply_text(res, reply_markup=reply_markup)
-    return borrow_add_ans
-
-def borrow_add_handlers():
-    return [
-        MessageHandler(Filters.text, borrow_add_ans)
-    ]
-
-def borrow_add_ans(bot, update):
-    req = update.message.text
-    backend.post_borrow_add(update.message.from_user.id, req)
-    return borrow_ask(bot, update)
-
-"""
-Done
+Main
 """
 
 def main():
@@ -120,17 +43,30 @@ def main():
 
     conversation_handler = ConversationHandler(
         entry_points = [
-            RegexHandler('.*', start_ask)
+            CommandHandler('start', start_talker.ask)
         ],
         states = {
-            start_ans: start_handlers(),
-            borrow_ans: borrow_handlers(),
-            borrow_add_ans: borrow_add_handlers()
+            start_talker.ans: start_talker.handlers(),
+            start_talker.borrow_talker.ans: start_talker.borrow_talker.handlers(),
+            start_talker.borrow_talker.insert_talker.ans: start_talker.borrow_talker.insert_talker.handlers(),
+            start_talker.borrow_talker.remove_talker.ans: start_talker.borrow_talker.remove_talker.handlers(),
+            start_talker.return_talker.ans: start_talker.return_talker.handlers(),
+            start_talker.return_talker.insert_talker.ans: start_talker.return_talker.insert_talker.handlers(),
+            start_talker.return_talker.remove_talker.ans: start_talker.return_talker.remove_talker.handlers(),
         },
         fallbacks = [],
     )
     
     updater.dispatcher.add_handler(conversation_handler)
+    
+    for callback in [get_movements_execute, del_movements_execute]:
+        name = callback.__name__
+        if name.endswith("_execute"):
+            command = name[:-len("_execute")]
+            updater.dispatcher.add_handler(CommandHandler(command, callback))
+        else:
+            raise Exception("Function name `%s` does not end with _execute")
+    
     updater.start_polling()
     updater.idle()
 
