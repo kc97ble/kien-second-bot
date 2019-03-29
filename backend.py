@@ -4,9 +4,6 @@ import datetime
 
 from tinydb import TinyDB, Query, operations as op, where
 
-BORROW = 'borrow'
-RETURN = 'return'
-
 def hasAuthor(author):
     return where('author') == author
 
@@ -50,3 +47,23 @@ class Backend:
             item.date = str(datetime.datetime.now())
         self.movements.insert_multiple(stages)
         self.stages.remove(hasAuthor(author) & hasAction(action))
+    
+    def post_clear_stages(self, author, action):
+        self.stages.remove(hasAuthor(author) & hasAction(action))
+
+    def get_unreturned_movements(self, author=None):
+        m_list = self.movements.all()
+        m_list.sort(key = lambda m : m['date'])
+        
+        latest = {}
+        for m in m_list:
+            if m['action'] == 'borrow':
+                latest[m['item']] = m
+            else:
+                latest.pop(m['item'], None)
+
+        result = sorted(latest.values(), key = lambda m : m['date'])
+        if author != None:
+            result = filter(lambda m : m['author'] == author, result)
+            
+        return list(result)

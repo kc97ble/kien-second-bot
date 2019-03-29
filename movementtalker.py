@@ -5,7 +5,7 @@ import textwrap
 
 from backend import Backend
 from talker import Talker
-from formatter import format_stages
+from formatter import format_stages, format_movement_list
 
 QUESTION_FMT = """\
 You are trying to %s equipment.
@@ -59,6 +59,8 @@ class MovementTalker(Talker):
             return self.remove_talker.ask(bot, update)
         elif req == "Proceed":
             return self.proceed_ask(bot, update)
+        elif req == "Cancel":
+            return self.cancel_ask(bot, update)
         else:
             update.message.reply_text("Unknown request: `%s`" % req)
             return self.ask(bot, update)
@@ -68,3 +70,7 @@ class MovementTalker(Talker):
         update.message.reply_text("OK")
         return self.next_talker.ask(bot, update)
     
+    def cancel_ask(self, bot, update):
+        self.backend.post_clear_stages(update.message.from_user.id, self.action)
+        update.message.reply_text("OK")
+        return self.next_talker.ask(bot, update)
